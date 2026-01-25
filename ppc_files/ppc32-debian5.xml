@@ -1,0 +1,68 @@
+<domain type="qemu" xmlns:qemu='http://libvirt.org/schemas/domain/qemu/1.0'>
+  <name>ppc-debian5</name>
+  <metadata>
+    <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
+      <libosinfo:os id="http://debian.org/debian/5" />
+    </libosinfo:libosinfo>
+  </metadata>
+  <memory>1048576</memory>
+  <currentMemory>1048576</currentMemory>
+  <vcpu>1</vcpu>
+
+  <os>
+    <type arch="ppc" machine="mac99">hvm</type>
+    <boot dev='hd' />
+  </os>
+
+  <clock offset="utc" />
+
+  <devices>
+    <emulator>/usr/bin/qemu-system-ppc</emulator>
+
+    <interface type="bridge">
+      <source bridge='br0' />
+      <model type='rtl8139' />
+    </interface>
+
+    <console type="pty" />
+    <input type="keyboard" bus="usb" />
+    <input type="mouse" bus="usb" />
+
+  </devices>
+  <seclabel type='none' />
+
+  <!-- 細かい qemu オプションをそのまま渡す -->
+  <qemu:commandline>
+    <!-- -L pc-bios -->
+    <qemu:arg value='-L' />
+    <qemu:arg value='pc-bios' />
+
+    <!-- -M mac99,via=pmu で上書き（machine 属性と二重になるので、ここで完全指定）-->
+    <qemu:arg value='-M' />
+    <qemu:arg value='mac99,via=pmu' />
+
+    <!-- -prom-env ... -->
+    <qemu:arg value='-prom-env' />
+    <qemu:arg value='boot-device=hd:,\yaboot' />
+    <qemu:arg value='-prom-env' />
+    <qemu:arg value='boot-args=conf=hd:,\yaboot.conf' />
+
+    <!-- ここで従来の -hda / -hdb を -drive に展開して渡す -->
+    <qemu:arg value='-drive' />
+    <qemu:arg value='file=/var/lib/libvirt/images/seagate.qcow2,if=ide,index=0,media=disk,format=qcow2' />
+    <qemu:arg value='-drive' />
+    <qemu:arg value='file=/var/lib/libvirt/images/wdc.qcow2,if=ide,index=1,media=disk,format=qcow2' />
+
+    <!-- -g 1024x768x8 -->
+    <qemu:arg value='-g' />
+    <qemu:arg value='1024x768x8' />
+
+    <qemu:arg value='-vga' />
+    <qemu:arg value='std' />
+
+    <qemu:arg value='-vnc' />
+    <qemu:arg value=':0' />
+
+  </qemu:commandline>
+
+</domain>
