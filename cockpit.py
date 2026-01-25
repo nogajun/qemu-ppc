@@ -179,6 +179,22 @@ def setup_cockpit(ip, gateway, dns):
     cockpitをインストールします
     """
 
+    # sources.listがあればdeb822形式に変換する
+    if host.get_fact(File, "/etc/apt/sources.list"):
+        server.shell(
+            name="sources.listをdeb822形式に変換",
+            commands=["apt -y modernize-sources"],
+        )
+
+    # apt-lineにcontribとnon-free追加
+    if host.get_fact(File, "/etc/apt/sources.list.d/debian.sources"):
+        files.replace(
+            name="apt-lineにnon-freeとcontribを追加",
+            path="/etc/apt/sources.list.d/debian.sources",
+            text="non-free-firmware",
+            replace="non-free-firmware contrib non-free",
+        )
+
     apt.update(name="aptリポジトリを更新する")
     apt.upgrade(name="パッケージを更新する")
 
@@ -220,12 +236,8 @@ def setup_cockpit(ip, gateway, dns):
         restarted=True,
     )
 
-    setup_bridge()  # bridge周りのネットワークを設定をする
+    setup_bridge(ip, gateway, dns)  # bridge周りのネットワークを設定をする
 
 
 # cockpitを設定する setup_cockpit(ip, gateway, dns)
-setup_cockpit(
-    "192.168.0.200/24",
-    "192.168.0.254",
-    "192.168.0.253",
-)
+setup_cockpit(host.name, host.data.gateway, host.data.dns)
