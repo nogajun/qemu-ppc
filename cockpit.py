@@ -215,12 +215,38 @@ def setup_cockpit(ip, gateway, dns):
             "vim",
             "nano",
             "socat",
+            "ufw",
         ],
         present=True,
     )
 
     setup_zram_tools()  # zramを設定する
     setup_qemu()  # qemuのVM起動設定をする
+
+    files.block(
+        name="SSHサーバーの設定を変更する",
+        path="/etc/ssh/sshd_config.d/local.conf",
+        present=True,
+        content=[
+            "Port 2222",
+            "PermitRootLogin no",
+            "PasswordAuthentication no",
+            "PermitEmptyPasswords no",
+        ],
+    )
+
+    server.shell(
+        name="ファイアーウォール(ufw)を設定",
+        commands=[
+            "ufw default deny incoming",
+            "ufw default allow outgoing",
+            'ufw allow "WWW Full"',
+            "ufw allow VNC",
+            "ufw allow 2222/tcp",
+            "ufw allow 9090/tcp",
+            "ufw enable",
+        ],
+    )
 
     # systemd-networkdで管理するためにinterfacesを無効化する
     interfaces = "/etc/network/interfaces"
