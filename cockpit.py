@@ -27,7 +27,7 @@ qemu_ppc_vm = StringIO(
 -device rtl8139,netdev=net0 \
 -monitor unix:/tmp/qemu-ppc-monitor.sock,server,nowait \
 -serial telnet:localhost:4444,server,nowait \
--pidfile /run/qemu-ppc.pid \
+-pidfile /var/run/qemu-ppc.pid \
 -daemonize
 """
 )
@@ -44,7 +44,7 @@ Type=forking
 # User=root
 ExecStart=/usr/local/bin/qemu_ppc_vm.sh
 ExecStop=/bin/sh -c "echo 'system_powerdown' | /usr/bin/socat - UNIX-CONNECT:/tmp/qemu-ppc-monitor.sock"
-PIDFile=/run/qemu-ppc.pid
+PIDFile=/var/run/qemu-ppc.pid
 TimeoutStopSec=300
 Restart=on-failure
 RestartSec=5
@@ -248,6 +248,8 @@ def setup_cockpit(ip, gateway, dns):
             "socat",
             "ufw",
             "unattended-upgrades",
+            "rsync",
+            "rclone",
         ],
         present=True,
     )
