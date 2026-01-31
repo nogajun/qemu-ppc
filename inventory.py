@@ -13,5 +13,7 @@ cockpit = (
         "ssh_key": os.getenv("SSH_KEY"),
         "gateway": os.getenv("GATEWAY"),
         "dns": os.getenv("DNS"),
+        "proxy": os.getenv("PROXY"),
+        "ntp": os.getenv("NTP"),
     },
 )

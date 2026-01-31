@@ -92,7 +92,7 @@ def setup_qemu():
     )
 
     files.line(
-        name="/etc/qemu/bridge.confにブリッジデバイスを設定する",
+        name="/etc/qemu/bridge.confにブリッジデバイスを設定",
         path="/etc/qemu/bridge.conf",
         present=True,
         line="^$",
@@ -174,6 +174,37 @@ def setup_bridge(ip, gateway, dns):
     )
 
 
+def setup_proxy(proxy):
+    files.block(
+        name="プロキシの環境変数を設定する",
+        path="/etc/profile.d/proxy.sh",
+        content=[
+            f'export http_proxy="{proxy}"',
+            'export https_proxy="\${http_proxy}"',
+            'export ftp_proxy="\${http_proxy}"',
+            'export HTTP_PROXY="\${http_proxy}"',
+            'export HTTPS_PROXY="\${http_proxy}"',
+            'export FTP_PROXY="\${http_proxy}"',
+            'export no_proxy="localhost,127.0.0.1"',
+            'export NO_PROXY="\${no_proxy}"',
+        ],
+        present=True,
+    )
+    files.file(path="/etc/profile.d/proxy.sh", mode="755")
+
+    files.block(
+        name="aptにプロキシを設定する",
+        path="/etc/apt/apt.conf.d/00proxy",
+        content=[
+            f'Acquire::http::Proxy "{proxy}";',
+            f'Acquire::https::Proxy "{proxy}";',
+        ],
+        present=True,
+    )
+
+    files.file(path="/etc/apt/apt.conf.d/00proxy", mode="755")
+
+
 def setup_cockpit(ip, gateway, dns):
     """
     cockpitをインストールします
@@ -216,6 +247,7 @@ def setup_cockpit(ip, gateway, dns):
             "nano",
             "socat",
             "ufw",
+            "unattended-upgrades",
         ],
         present=True,
     )
@@ -224,15 +256,25 @@ def setup_cockpit(ip, gateway, dns):
     setup_qemu()  # qemuのVM起動設定をする
 
     files.block(
-        name="SSHサーバーの設定を変更する",
-        path="/etc/ssh/sshd_config.d/local.conf",
+        name="unattended-upgradesで自動アップデートを設定",
+        path="/etc/apt/apt.conf.d/20auto-upgrades",
+        content=[
+            'APT::Periodic::Update-Package-Lists "1";',
+            'APT::Periodic::Unattended-Upgrade "1";',
+        ],
         present=True,
+    )
+
+    files.block(
+        name="SSHサーバーの設定を変更",
+        path="/etc/ssh/sshd_config.d/local.conf",
         content=[
             "Port 2222",
             "PermitRootLogin no",
             "PasswordAuthentication no",
             "PermitEmptyPasswords no",
         ],
+        present=True,
     )
 
     server.shell(
@@ -242,9 +284,9 @@ def setup_cockpit(ip, gateway, dns):
             "ufw default allow outgoing",
             'ufw allow "WWW Full"',
             "ufw allow VNC",
-            "ufw allow 2222/tcp",
-            "ufw allow 9090/tcp",
-            "ufw enable",
+            "ufw allow 2222",
+            "ufw allow 9090",
+            "ufw --force enable",
         ],
     )
 
@@ -263,6 +305,19 @@ def setup_cockpit(ip, gateway, dns):
     )
 
     setup_bridge(ip, gateway, dns)  # bridge周りのネットワークを設定をする
+
+    # プロキシの設定があれば設定する
+    if host.data.proxy:
+        setup_proxy(host.data.proxy)
+
+    # NTPの設定があれば設定する
+    if host.data.ntp:
+        files.replace(
+            name="systemd-timesyncdを設定する",
+            path="/etc/systemd/timesyncd.conf",
+            text=r"^#\(NTP=\)",
+            replace=rf"\1{host.data.ntp}",
+        )
 
 
 # cockpitを設定する setup_cockpit(ip, gateway, dns)
