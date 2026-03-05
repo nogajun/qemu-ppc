@@ -7,8 +7,7 @@ from pyinfra.operations import apt, files, server, systemd
 
 # qemu-ppc仮想マシン起動スクリプト
 qemu_ppc_vm = StringIO(
-    """
-#!/bin/bash
+    """#!/bin/bash
 /usr/bin/qemu-system-ppc \
 -name "ppc-vm" \
 -machine mac99,via=pmu \
@@ -34,8 +33,7 @@ qemu_ppc_vm = StringIO(
 
 # qemu-ppc起動ユニットファイル
 qemu_ppc = StringIO(
-    """
-[Unit]
+    """[Unit]
 Description=QEMU PPC Virtual Machine
 After=network.target
 
